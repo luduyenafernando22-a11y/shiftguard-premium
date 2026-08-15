@@ -2,16 +2,36 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from "
 import { isSupabaseConfigured, supabase, supabaseConfigError } from "../lib/supabase";
 
 const AuthContext = createContext(null);
+const PROFILE_CACHE_KEY = "shiftguard-profile-cache";
+
+function getCachedProfile() {
+  try {
+    const cached = localStorage.getItem(PROFILE_CACHE_KEY);
+    return cached ? JSON.parse(cached) : null;
+  } catch {
+    return null;
+  }
+}
+
+function cacheProfile(profile) {
+  try {
+    if (profile) localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(profile));
+    else localStorage.removeItem(PROFILE_CACHE_KEY);
+  } catch {
+    // Cache is an optimization; authentication remains authoritative.
+  }
+}
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
-  const [profile, setProfile] = useState(null);
+  const [profile, setProfile] = useState(() => getCachedProfile());
   const [loading, setLoading] = useState(isSupabaseConfigured);
   const [error, setError] = useState("");
 
   async function loadProfile(user) {
     if (!supabase || !user) {
       setProfile(null);
+      cacheProfile(null);
       return;
     }
     const { data, error: profileError } = await supabase
@@ -21,6 +41,7 @@ export function AuthProvider({ children }) {
       .single();
     if (profileError) throw profileError;
     setProfile(data);
+    cacheProfile(data);
   }
 
   useEffect(() => {
@@ -83,6 +104,7 @@ export function AuthProvider({ children }) {
   }
 
   async function signOut() {
+    cacheProfile(null);
     if (supabase) await supabase.auth.signOut();
   }
 

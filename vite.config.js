@@ -13,7 +13,7 @@ export default defineConfig({
         short_name: "ShiftGuard",
         description: "ArbZG shift monitoring and compliance workspace.",
         theme_color: "#0f172a",
-        background_color: "#f5f7fb",
+        background_color: "#0f172a",
         display: "standalone",
         scope: "/",
         start_url: "/",
