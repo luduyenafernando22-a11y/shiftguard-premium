@@ -51,9 +51,9 @@ export default function EmployeeTable({ metricsList = [], onOpenProfile, onAddEm
           <option value="active">{t("employeesPage.active")}</option>
           <option value="inactive">{t("employeesPage.inactive")}</option>
         </select>
-        <button className="btn btn-primary" onClick={onAddEmployee}>
+        {onAddEmployee && <button className="btn btn-primary" onClick={onAddEmployee}>
           <Plus size={16} /> {t("employeesPage.add")}
-        </button>
+        </button>}
       </div>
 
       <div className="table-wrap">

@@ -7,7 +7,7 @@ import EmployeeProfile from "../components/employees/EmployeeProfile";
 import StatCard from "../components/StatCard";
 import { Users, CheckCircle2, AlertTriangle, AlertCircle } from "lucide-react";
 
-export default function EmployeesPage({ employees = [], auditedShifts = [], onSaveEmployee, onDeleteEmployee }) {
+export default function EmployeesPage({ employees = [], auditedShifts = [], onSaveEmployee, onDeleteEmployee, readOnly = false }) {
   const { t } = useI18n();
   const [formOpen, setFormOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
@@ -18,11 +18,13 @@ export default function EmployeesPage({ employees = [], auditedShifts = [], onSa
   const profileMetrics = metricsList.find((m) => m.employee.id === profileId) || null;
 
   function openAdd() {
+    if (readOnly) return;
     setEditingEmployee(null);
     setFormOpen(true);
   }
 
   function openEdit(employee) {
+    if (readOnly) return;
     setEditingEmployee(employee);
     setFormOpen(true);
     setProfileId(null);
@@ -35,6 +37,7 @@ export default function EmployeesPage({ employees = [], auditedShifts = [], onSa
   }
 
   function handleDelete(id) {
+    if (readOnly) return;
     onDeleteEmployee(id);
     setProfileId(null);
   }
@@ -56,7 +59,7 @@ export default function EmployeesPage({ employees = [], auditedShifts = [], onSa
         <StatCard label={t("employees.violation")} value={summary.violation} tone="danger" icon={<AlertCircle size={20} />} />
       </section>
 
-      <EmployeeTable metricsList={metricsList} onOpenProfile={setProfileId} onAddEmployee={openAdd} />
+      <EmployeeTable metricsList={metricsList} onOpenProfile={setProfileId} onAddEmployee={readOnly ? undefined : openAdd} />
 
       {formOpen && (
         <EmployeeForm
@@ -73,8 +76,8 @@ export default function EmployeesPage({ employees = [], auditedShifts = [], onSa
         <EmployeeProfile
           metrics={profileMetrics}
           onClose={() => setProfileId(null)}
-          onEdit={openEdit}
-          onDelete={handleDelete}
+          onEdit={readOnly ? undefined : openEdit}
+          onDelete={readOnly ? undefined : handleDelete}
         />
       )}
     </div>

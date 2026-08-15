@@ -28,7 +28,8 @@ export default function DashboardPage({
   onCancelEdit,
   onOpenAddShift,
   onLoadDemo,
-  onClearAll
+  onClearAll,
+  readOnly = false
 }) {
   const { t } = useI18n();
   const employeeMetrics = computeAllEmployeeMetrics(employees, auditedShifts);
@@ -78,12 +79,12 @@ export default function DashboardPage({
               <span className="eyebrow">{t("schedule.eyebrow")}</span>
               <h2>{t("schedule.heading")}</h2>
             </div>
-            <button className="btn btn-primary" onClick={onOpenAddShift}>
+            {!readOnly && <button className="btn btn-primary" onClick={onOpenAddShift}>
               <Plus size={17} /> {t("schedule.addShift")}
-            </button>
+            </button>}
           </div>
 
-          <ShiftTable shifts={auditedShifts} onEdit={onEditShift} onDelete={onDeleteShift} />
+          <ShiftTable shifts={auditedShifts} onEdit={readOnly ? undefined : onEditShift} onDelete={readOnly ? undefined : onDeleteShift} />
         </div>
 
         <aside className="sidebar">
@@ -103,14 +104,14 @@ export default function DashboardPage({
             </ul>
           </div>
 
-          <div className="side-card no-print">
+          {!readOnly && <div className="side-card no-print">
             <div className="side-title"><Users size={18} /> {t("controls.title")}</div>
             <p className="side-copy">{t("controls.body")}</p>
             <div className="side-buttons">
               <button className="btn btn-secondary full" onClick={onLoadDemo}>{t("controls.loadDemo")}</button>
               <button className="btn btn-ghost full" onClick={onClearAll}>{t("controls.clear")}</button>
             </div>
-          </div>
+          </div>}
         </aside>
       </section>
     </>
