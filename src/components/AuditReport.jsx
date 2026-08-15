@@ -1,6 +1,7 @@
 import React from "react";
 import { Printer, FileText } from "lucide-react";
 import { getAuditSummary } from "../arbzg";
+import { useState } from "react";
 import { useI18n } from "../i18n/I18nContext";
 import { localizeAlert } from "../i18n/alertMessages";
 
@@ -16,6 +17,97 @@ export default function AuditReport({ shifts = [] }) {
   const { t, lang } = useI18n();
   const summary = getAuditSummary(shifts);
   const locale = lang === "de" ? "de-DE" : "en-GB";
+  const [isExporting, setIsExporting] = useState(false);
+
+  async function exportPdf() {
+    setIsExporting(true);
+    try {
+      const [{ jsPDF }, { default: autoTable }] = await Promise.all([
+        import("jspdf"),
+        import("jspdf-autotable")
+      ]);
+      const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 14;
+      const today = new Date().toISOString().slice(0, 10);
+      const statusLabel = (severity) => {
+        if (severity === "warning") return t("stats.alerts");
+        if (severity === "ok") return t("stats.ok");
+        return t("stats.violations");
+      };
+
+      doc.setProperties({
+        title: t("report.title"),
+        subject: t("report.standard"),
+        author: "ShiftGuard"
+      });
+      doc.setFillColor(15, 23, 42);
+      doc.rect(0, 0, pageWidth, 32, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(19);
+      doc.setFont("helvetica", "bold");
+      doc.text("ShiftGuard", margin, 14);
+      doc.setFontSize(13);
+      doc.text(t("report.title"), margin, 23);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      doc.text(`${t("report.standard")} · ${t("report.generated")}: ${new Date().toLocaleString(locale)}`, pageWidth - margin, 18, { align: "right" });
+
+      doc.setTextColor(23, 32, 51);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.text(`${t("report.total")}: ${summary.total}`, margin, 42);
+      doc.setTextColor(22, 101, 52);
+      doc.text(`${t("stats.ok")}: ${summary.ok}`, margin + 43, 42);
+      doc.setTextColor(180, 83, 9);
+      doc.text(`${t("stats.alerts")}: ${summary.warnings}`, margin + 78, 42);
+      doc.setTextColor(185, 28, 28);
+      doc.text(`${t("stats.violations")}: ${summary.violations}`, margin + 126, 42);
+
+      autoTable(doc, {
+        startY: 49,
+        margin: { left: margin, right: margin },
+        head: [[
+          t("table.employee"),
+          t("table.date"),
+          t("table.time"),
+          t("table.gross"),
+          t("table.break"),
+          t("table.rest"),
+          t("table.status"),
+          t("report.discrepancyAlerts")
+        ]],
+        body: shifts.map((shift) => [
+          shift.employee,
+          formatDate(shift.date, locale),
+          `${shift.start}–${shift.end}`,
+          `${shift.grossHours}h`,
+          `${shift.breakMinutes}m / ${shift.requiredBreak}m`,
+          shift.restHours === undefined ? "—" : `${shift.restHours}h`,
+          statusLabel(shift.severity),
+          shift.alerts.length
+            ? shift.alerts.map((alert) => localizeAlert(alert, lang, shift).title).join("; ")
+            : t("report.noDiscrepancy")
+        ]),
+        theme: "grid",
+        styles: { font: "helvetica", fontSize: 8, cellPadding: 3, textColor: [23, 32, 51], lineColor: [219, 226, 234], lineWidth: 0.2 },
+        headStyles: { fillColor: [30, 41, 59], textColor: [255, 255, 255], fontStyle: "bold" },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+        columnStyles: { 0: { cellWidth: 34 }, 1: { cellWidth: 29 }, 2: { cellWidth: 24 }, 3: { cellWidth: 20 }, 4: { cellWidth: 26 }, 5: { cellWidth: 20 }, 6: { cellWidth: 25 } },
+        didDrawPage: () => {
+          const pageNumber = doc.internal.getNumberOfPages();
+          doc.setFontSize(8);
+          doc.setTextColor(100, 116, 139);
+          doc.text(t("report.legal"), margin, doc.internal.pageSize.getHeight() - 10, { maxWidth: pageWidth - margin * 2 - 25 });
+          doc.text(`${pageNumber}`, pageWidth - margin, doc.internal.pageSize.getHeight() - 10, { align: "right" });
+        }
+      });
+
+      doc.save(`shiftguard-audit-report-${today}.pdf`);
+    } finally {
+      setIsExporting(false);
+    }
+  }
 
   function printReport() {
     window.print();
@@ -74,8 +166,8 @@ th{background:#f1f5f9}footer{margin-top:30px;font-size:11px;color:#64748b}
           <p>{t("report.subtitle")}</p>
         </div>
         <div className="report-actions no-print">
-          <button className="btn btn-secondary" onClick={exportHtml}>
-            <FileText size={17} /> {t("report.exportHtml")}
+          <button className="btn btn-secondary" onClick={exportPdf} disabled={isExporting}>
+            <FileText size={17} /> {isExporting ? t("report.exportingPdf") : t("report.exportPdf")}
           </button>
           <button className="btn btn-primary" onClick={printReport}>
             <Printer size={17} /> {t("report.print")}
