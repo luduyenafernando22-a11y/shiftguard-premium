@@ -200,3 +200,83 @@ export async function fetchAuditLogs(organizationId) {
     throw error;
   }
 }
+
+
+const ATTENDANCE_QUEUE_KEY = "shiftguard-attendance-queue";
+
+function readAttendanceQueue() {
+  return readOffline("attendance-queue", []);
+}
+
+function writeAttendanceQueue(queue) {
+  writeOffline("attendance-queue", queue);
+}
+
+export function mapAttendanceRow(row) {
+  return {
+    id: row.id,
+    organizationId: row.organization_id,
+    userId: row.user_id,
+    type: row.type,
+    timestamp: row.timestamp,
+    locationCoords: row.location_coords || null,
+    isOfflineSync: Boolean(row.is_offline_sync),
+    verifiedAt: row.verified_at || null
+  };
+}
+
+export async function fetchAttendanceLogs(organizationId, userId, canMonitor = false) {
+  let query = supabase.from("attendance_logs").select("*").eq("organization_id", organizationId).order("timestamp", { ascending: false }).limit(500);
+  if (!canMonitor) query = query.eq("user_id", userId);
+  const { data, error } = await query;
+  if (error) throw error;
+  const logs = (data || []).map(mapAttendanceRow);
+  writeOffline(`organization:${organizationId}:attendance:${canMonitor ? "all" : userId}`, logs);
+  return logs;
+}
+
+export async function getCachedAttendanceLogs(organizationId, userId, canMonitor = false) {
+  return readOffline(`organization:${organizationId}:attendance:${canMonitor ? "all" : userId}`, []);
+}
+
+export async function insertAttendanceLog(payload, allowQueue = true) {
+  try {
+    const { data, error } = await supabase.from("attendance_logs").insert(payload).select().single();
+    if (error) throw error;
+    return { queued: false, log: mapAttendanceRow(data) };
+  } catch (error) {
+    const networkFailure = typeof navigator !== "undefined" && (!navigator.onLine || /network|fetch|failed to fetch|offline/i.test(error?.message || ""));
+    if (!allowQueue || !networkFailure) throw error;
+    const queue = readAttendanceQueue();
+    const queuedItem = { ...payload, id: crypto.randomUUID(), queuedAt: new Date().toISOString() };
+    writeAttendanceQueue([...queue, queuedItem]);
+    return { queued: true, log: mapAttendanceRow({ ...queuedItem, timestamp: queuedItem.timestamp || new Date().toISOString(), is_offline_sync: true }) };
+  }
+}
+
+export async function flushAttendanceQueue() {
+  const queue = readAttendanceQueue();
+  if (!queue.length || !supabase) return { synced: 0 };
+  const remaining = [];
+  let synced = 0;
+  for (const item of queue) {
+    try {
+      const { id: _localId, queuedAt: _queuedAt, ...attendancePayload } = item;
+      const { error } = await supabase.from("attendance_logs").insert({ ...attendancePayload, is_offline_sync: true }).select().single();
+      if (error) throw error;
+      synced += 1;
+    } catch {
+      remaining.push(item);
+    }
+  }
+  writeAttendanceQueue(remaining);
+  return { synced };
+}
+
+export function subscribeToAttendance(organizationId, callback) {
+  if (!supabase) return () => {};
+  const channel = supabase.channel(`attendance:${organizationId}`)
+    .on("postgres_changes", { event: "*", schema: "public", table: "attendance_logs", filter: `organization_id=eq.${organizationId}` }, callback)
+    .subscribe();
+  return () => { supabase.removeChannel(channel); };
+}

@@ -11,6 +11,8 @@ export default function TopBar({ activeView, onNavigate, role }) {
     { id: "dashboard", label: t("nav.dashboard") },
     { id: "employees", label: t("nav.employees") },
     { id: "report", label: t("nav.report") },
+    ...(role === "employee" ? [{ id: "operational", label: t("nav.operational") }] : []),
+    ...(role === "admin" || role === "manager" ? [{ id: "live", label: t("nav.live") }] : []),
     ...(role === "admin" ? [{ id: "admin", label: t("nav.admin") }, { id: "settings", label: t("nav.settings") }] : []),
     ...(role === "admin" || role === "auditor" ? [{ id: "auditLog", label: t("nav.auditLog") }] : [])
   ];

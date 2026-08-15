@@ -11,6 +11,8 @@ import AuditReport from "./components/AuditReport";
 import AdminUsersPage from "./pages/AdminUsersPage";
 import ComplianceSettingsPage from "./pages/ComplianceSettingsPage";
 import AuditLogPage from "./pages/AuditLogPage";
+import EmployeeOperationalPage from "./pages/EmployeeOperationalPage";
+import LiveDashboardPage from "./pages/LiveDashboardPage";
 import { isSupabaseConfigured } from "./lib/supabase";
 import {
   fetchOrganizationData,
@@ -50,6 +52,9 @@ const DEMO_SHIFTS = [
 export default function App() {
   const { t } = useI18n();
   const { user, profile, role, loading: authLoading, signOut } = useAuth();
+  const effectiveRole = role || (!isSupabaseConfigured ? "employee" : null);
+  const effectiveOrganizationId = profile?.organization_id || "demo-organization";
+  const effectiveUserId = user?.id || "demo-user";
   const [employees, setEmployees] = useState(() => isSupabaseConfigured ? [] : readDemo(DEMO_STORAGE.employees, DEMO_EMPLOYEES));
   const [rawShifts, setRawShifts] = useState(() => isSupabaseConfigured ? [] : readDemo(DEMO_STORAGE.shifts, DEMO_SHIFTS));
   const [editingShift, setEditingShift] = useState(null);
@@ -73,6 +78,11 @@ export default function App() {
       }
     }
   }, [employees, rawShifts]);
+
+  useEffect(() => {
+    if (effectiveRole === "employee") setActiveView("operational");
+    if (effectiveRole === "manager" || effectiveRole === "admin") setActiveView("live");
+  }, [effectiveRole]);
 
   useEffect(() => {
     if (!isSupabaseConfigured || !profile?.organization_id) return undefined;
@@ -179,14 +189,16 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <TopBar activeView={activeView} onNavigate={navigate} role={role} />
+      <TopBar activeView={activeView} onNavigate={navigate} role={effectiveRole} />
       <main>
         {dataError && <div className="global-error" role="alert">{dataError}</div>}
         {activeView === "dashboard" && <DashboardPage employees={employees} auditedShifts={auditedShifts} summary={summary} showForm={showForm && canManage} editingShift={editingShift} onSaveShift={saveShift} onDeleteShift={deleteShift} onEditShift={editShift} onCancelEdit={() => setEditingShift(null)} onOpenAddShift={() => { setEditingShift(null); setShowForm(true); }} onLoadDemo={loadDemo} onClearAll={clearAll} readOnly={readOnly} />}
         {activeView === "employees" && <EmployeesPage employees={employees} auditedShifts={auditedShifts} onSaveEmployee={saveEmployee} onDeleteEmployee={deleteEmployee} readOnly={readOnly} />}
-        {activeView === "admin" && role === "admin" && <AdminUsersPage organizationId={profile.organization_id} currentUserId={user.id} />}
-        {activeView === "settings" && role === "admin" && <ComplianceSettingsPage organizationId={profile.organization_id} userId={user.id} onRulesSaved={setRules} />}
-        {activeView === "auditLog" && (role === "admin" || role === "auditor") && <AuditLogPage organizationId={profile.organization_id} />}
+        {activeView === "admin" && effectiveRole === "admin" && <AdminUsersPage organizationId={effectiveOrganizationId} currentUserId={effectiveUserId} />}
+        {activeView === "settings" && effectiveRole === "admin" && <ComplianceSettingsPage organizationId={effectiveOrganizationId} userId={effectiveUserId} onRulesSaved={setRules} />}
+        {activeView === "auditLog" && (effectiveRole === "admin" || effectiveRole === "auditor") && <AuditLogPage organizationId={effectiveOrganizationId} />}
+        {activeView === "operational" && effectiveRole === "employee" && <EmployeeOperationalPage organizationId={effectiveOrganizationId} userId={effectiveUserId} />}
+        {activeView === "live" && (effectiveRole === "admin" || effectiveRole === "manager") && <LiveDashboardPage organizationId={effectiveOrganizationId} />}
         {(activeView === "dashboard" || activeView === "employees" || activeView === "report") && <AuditReport shifts={auditedShifts} />}
       </main>
       <footer className="app-footer no-print">
