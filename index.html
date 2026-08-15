@@ -2,21 +2,62 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+
+    <!--
+      Bootstrap síncrono: o script abaixo define data-theme/lang antes do
+      primeiro paint. Os seletores específicos permitem que o tema Light
+      não herde o fundo escuro usado como fallback inicial.
+    -->
     <style>
-      html, body {
+      html,
+      body {
         background-color: #0f172a;
         color: #ffffff;
       }
+
+      html[data-theme="light"],
+      html[data-theme="light"] body {
+        background-color: #f5f7fb;
+        color: #172033;
+      }
+
+      html[data-theme="dark"],
+      html[data-theme="dark"] body {
+        background-color: #0b0f1a;
+        color: #e6e9f2;
+      }
     </style>
+
+    <script>
+      (function () {
+        try {
+          var storedTheme = localStorage.getItem("shiftguard-theme");
+          var theme = storedTheme === "light" || storedTheme === "dark"
+            ? storedTheme
+            : (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+
+          var storedLanguage = localStorage.getItem("shiftguard-lang");
+          var language = storedLanguage === "de" || storedLanguage === "en"
+            ? storedLanguage
+            : "en";
+
+          document.documentElement.setAttribute("data-theme", theme);
+          document.documentElement.setAttribute("lang", language);
+        } catch (_) {
+          document.documentElement.setAttribute("data-theme", "light");
+          document.documentElement.setAttribute("lang", "en");
+        }
+      })();
+    </script>
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0f172a" />
+    <meta name="description" content="Standard ArbZG Checker — internal shift monitoring and audit reporting." />
+
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <meta
-      name="description"
-      content="Standard ArbZG Checker — internal shift monitoring and audit reporting."
-    />
+
     <title>ShiftGuard</title>
   </head>
   <body>

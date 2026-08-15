@@ -4,6 +4,8 @@ const ThemeContext = createContext(null);
 const STORAGE_KEY = "shiftguard-theme";
 
 function getInitialTheme() {
+  const bootstrapped = document.documentElement.getAttribute("data-theme");
+  if (bootstrapped === "light" || bootstrapped === "dark") return bootstrapped;
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored === "light" || stored === "dark") return stored;

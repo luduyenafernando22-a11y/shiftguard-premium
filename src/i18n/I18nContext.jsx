@@ -5,8 +5,11 @@ const I18nContext = createContext(null);
 const STORAGE_KEY = "shiftguard-lang";
 
 function getInitialLang() {
+  const bootstrapped = document.documentElement.getAttribute("lang");
+  if (bootstrapped === "de" || bootstrapped === "en") return bootstrapped;
   try {
-    return localStorage.getItem(STORAGE_KEY) || "en";
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored === "de" || stored === "en" ? stored : "en";
   } catch {
     return "en";
   }
