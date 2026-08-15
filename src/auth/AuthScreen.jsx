@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ArrowRight, LockKeyhole, ShieldCheck } from "lucide-react";
+import { ArrowRight, LockKeyhole } from "lucide-react";
 import { useI18n } from "../i18n/I18nContext";
 import { useAuth } from "./AuthContext";
 
@@ -51,7 +51,7 @@ export default function AuthScreen() {
     <main className="auth-shell auth-shell-premium">
       <section className="auth-card auth-card-premium" aria-labelledby="auth-title">
         <div className="auth-brand auth-brand-premium">
-          <span className="auth-brand-mark" aria-hidden="true"><ShieldCheck size={28} strokeWidth={2.4} /></span>
+          <span className="auth-brand-mark" aria-hidden="true"><img src="/pwa-192x192.png" alt="" /></span>
           <span>{t("app.name")}</span>
         </div>
         <span className="auth-eyebrow">{t("auth.eyebrow")}</span>

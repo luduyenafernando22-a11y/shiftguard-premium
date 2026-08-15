@@ -465,3 +465,7 @@ details summary { cursor: pointer; color: var(--blue); font-weight: 700; }
   .topbar-status { display: none; }
   .demo-role-switcher select { min-width: 96px; }
 }
+
+.brand-mark img { width: 100%; height: 100%; display: block; object-fit: cover; border-radius: inherit; }
+.auth-brand-mark { overflow: hidden; }
+.auth-brand-mark img { width: 100%; height: 100%; display: block; object-fit: cover; border-radius: inherit; }

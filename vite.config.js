@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.svg"],
+      includeAssets: ["favicon.ico", "pwa-192x192.png", "pwa-512x512.png", "apple-touch-icon.png"],
       manifest: {
         name: "ShiftGuard Premium",
         short_name: "ShiftGuard",
@@ -17,7 +17,10 @@ export default defineConfig({
         display: "standalone",
         scope: "/",
         start_url: "/",
-        icons: [{ src: "/favicon.svg", sizes: "any", type: "image/svg+xml", purpose: "any maskable" }]
+        icons: [
+          { src: "/pwa-192x192.png", sizes: "192x192", type: "image/png", purpose: "any maskable" },
+          { src: "/pwa-512x512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" }
+        ]
       },
       workbox: {
         navigateFallback: "/index.html",

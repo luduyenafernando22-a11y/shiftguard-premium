@@ -1,5 +1,5 @@
 import React from "react";
-import { ShieldCheck, Sun, Moon, Languages } from "lucide-react";
+import { Sun, Moon, Languages } from "lucide-react";
 import { useI18n } from "../../i18n/I18nContext";
 import { useTheme } from "../../theme/ThemeContext";
 
@@ -38,7 +38,7 @@ export default function TopBar({ activeView, onNavigate, role, isDemoMode = fals
   return (
     <header className="topbar no-print">
       <div className="brand">
-        <div className="brand-mark"><ShieldCheck size={22} /></div>
+        <div className="brand-mark"><img src="/pwa-192x192.png" alt="ShiftGuard" /></div>
         <div>
           <strong>{t("app.name")}</strong>
           <span>{t("app.tagline")}</span>
