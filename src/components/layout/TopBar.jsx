@@ -3,14 +3,16 @@ import { ShieldCheck, Sun, Moon, Languages } from "lucide-react";
 import { useI18n } from "../../i18n/I18nContext";
 import { useTheme } from "../../theme/ThemeContext";
 
-export default function TopBar({ activeView, onNavigate }) {
+export default function TopBar({ activeView, onNavigate, role }) {
   const { t, lang, toggleLang } = useI18n();
   const { theme, toggleTheme } = useTheme();
 
   const navItems = [
     { id: "dashboard", label: t("nav.dashboard") },
     { id: "employees", label: t("nav.employees") },
-    { id: "report", label: t("nav.report") }
+    { id: "report", label: t("nav.report") },
+    ...(role === "admin" ? [{ id: "admin", label: t("nav.admin") }, { id: "settings", label: t("nav.settings") }] : []),
+    ...(role === "admin" || role === "auditor" ? [{ id: "auditLog", label: t("nav.auditLog") }] : [])
   ];
 
   return (

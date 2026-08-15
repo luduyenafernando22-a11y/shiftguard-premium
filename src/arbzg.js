@@ -39,17 +39,17 @@ export function hoursFromMinutes(minutes) {
   return round(minutes / 60);
 }
 
-export function getRequiredBreakMinutes(grossHours) {
-  if (grossHours > RULES.breakThresholdLongHours) {
-    return RULES.breakMinutesLong;
+export function getRequiredBreakMinutes(grossHours, rules = RULES) {
+  if (grossHours > rules.breakThresholdLongHours) {
+    return rules.breakMinutesLong;
   }
-  if (grossHours >= RULES.breakThresholdHours) {
-    return RULES.breakMinutesStandard;
+  if (grossHours >= rules.breakThresholdHours) {
+    return rules.breakMinutesStandard;
   }
   return 0;
 }
 
-export function auditShift(shift) {
+export function auditShift(shift, rules = RULES) {
   const start = toDateTime(shift.date, shift.start);
   const end = toDateTime(shift.date, shift.end);
 
@@ -64,24 +64,24 @@ export function auditShift(shift) {
   const breakMinutes = Number(shift.breakMinutes) || 0;
   const netMinutes = Math.max(0, grossMinutes - breakMinutes);
   const netHours = hoursFromMinutes(netMinutes);
-  const requiredBreak = getRequiredBreakMinutes(grossHours);
+  const requiredBreak = getRequiredBreakMinutes(grossHours, rules);
 
   const alerts = [];
   let severity = "ok";
 
-  if (grossHours > RULES.maximumDailyHours) {
+  if (grossHours > rules.maximumDailyHours) {
     severity = "violation";
     alerts.push({
       code: "DAILY_MAX",
       title: "Daily maximum exceeded",
-      detail: `Recorded span is ${grossHours}h. The standard checker flags shifts above ${RULES.maximumDailyHours}h.`
+      detail: `Recorded span is ${grossHours}h. The standard checker flags shifts above ${rules.maximumDailyHours}h.`
     });
-  } else if (grossHours > RULES.standardDailyHours) {
+  } else if (grossHours > rules.standardDailyHours) {
     severity = "warning";
     alerts.push({
       code: "DAILY_STANDARD",
       title: "Above 8h standard",
-      detail: `Recorded span is ${grossHours}h, above the ${RULES.standardDailyHours}h standard and within the 10h ceiling.`
+      detail: `Recorded span is ${grossHours}h, above the ${rules.standardDailyHours}h standard and within the configured ceiling.`
     });
   }
 
@@ -109,8 +109,8 @@ export function auditShift(shift) {
   };
 }
 
-export function auditShifts(shifts) {
-  const audited = shifts.map(auditShift);
+export function auditShifts(shifts, rules = RULES) {
+  const audited = shifts.map((shift) => auditShift(shift, rules));
 
   const grouped = new Map();
   audited.forEach((shift) => {
@@ -131,12 +131,12 @@ export function auditShifts(shifts) {
       current.restMinutes = restMinutes;
       current.restHours = hoursFromMinutes(restMinutes);
 
-      if (restMinutes < RULES.minimumRestHours * 60) {
+      if (restMinutes < rules.minimumRestHours * 60) {
         current.severity = "violation";
         current.alerts.push({
           code: "REST",
           title: "Rest period below 11h",
-          detail: `Only ${current.restHours}h between the previous shift end and this shift start. Minimum checked: ${RULES.minimumRestHours}h.`
+          detail: `Only ${current.restHours}h between the previous shift end and this shift start. Minimum checked: ${rules.minimumRestHours}h.`
         });
       }
     }

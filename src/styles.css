@@ -278,6 +278,12 @@ td { padding: 13px 12px; border-top: 1px solid var(--line); font-size: 12px; col
   .form-grid { grid-template-columns: 1fr; }
 }
 
+.admin-page, .settings-page { max-width: 1100px; margin: 0 auto; }
+.settings-card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 24px; }
+.settings-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.settings-grid label { display: grid; gap: 6px; }
+.audit-json { max-width: 360px; max-height: 180px; overflow: auto; white-space: pre-wrap; font-size: 10px; color: var(--muted); }
+details summary { cursor: pointer; color: var(--blue); font-weight: 700; }
 .auth-shell { min-height: 100vh; display: grid; place-items: center; padding: 32px 18px; background: var(--bg); }
 .auth-card { width: min(100%, 460px); padding: 34px; background: var(--surface); border: 1px solid var(--line); border-radius: 22px; box-shadow: var(--shadow); }
 .auth-brand { display: flex; align-items: center; gap: 10px; color: var(--blue); font-weight: 800; font-size: 18px; margin-bottom: 28px; }
