@@ -2,8 +2,15 @@ import React, { useEffect, useState } from "react";
 import { ShieldCheck, UsersRound } from "lucide-react";
 import { useI18n } from "../i18n/I18nContext";
 import { fetchOrganizationMembers, updateMemberRole } from "../lib/dataService";
+import { supabase } from "../lib/supabase";
 
 const ROLES = ["admin", "manager", "auditor", "employee"];
+const DEMO_MEMBERS = [
+  { id: "demo-admin", full_name: "Alex Morgan", email: "alex@shiftguard.demo", role: "admin", created_at: "2026-01-12T09:00:00Z" },
+  { id: "demo-manager", full_name: "Sofia Weber", email: "sofia@shiftguard.demo", role: "manager", created_at: "2026-01-16T09:00:00Z" },
+  { id: "demo-auditor", full_name: "Jonas Keller", email: "jonas@shiftguard.demo", role: "auditor", created_at: "2026-02-03T09:00:00Z" },
+  { id: "demo-employee", full_name: "Mia Fischer", email: "mia@shiftguard.demo", role: "employee", created_at: "2026-02-08T09:00:00Z" },
+];
 
 export default function AdminUsersPage({ organizationId, currentUserId }) {
   const { t } = useI18n();
@@ -14,7 +21,17 @@ export default function AdminUsersPage({ organizationId, currentUserId }) {
 
   useEffect(() => {
     let active = true;
-    fetchOrganizationMembers(organizationId).then((data) => active && setMembers(data)).catch((err) => active && setError(err.message)).finally(() => active && setLoading(false));
+    const load = async () => {
+      try {
+        const data = supabase ? await fetchOrganizationMembers(organizationId) : DEMO_MEMBERS;
+        if (active) setMembers(data);
+      } catch (err) {
+        if (active) setError(err.message);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    load();
     return () => { active = false; };
   }, [organizationId]);
 
@@ -23,7 +40,9 @@ export default function AdminUsersPage({ organizationId, currentUserId }) {
     setSaving(member.id);
     setError("");
     try {
-      const updated = await updateMemberRole(member.id, role, organizationId);
+      const updated = supabase
+        ? await updateMemberRole(member.id, role, organizationId)
+        : { ...member, role };
       setMembers((current) => current.map((item) => item.id === updated.id ? updated : item));
     } catch (err) { setError(err.message); }
     finally { setSaving(""); }
