@@ -3,19 +3,37 @@ import { ShieldCheck, Sun, Moon, Languages } from "lucide-react";
 import { useI18n } from "../../i18n/I18nContext";
 import { useTheme } from "../../theme/ThemeContext";
 
-export default function TopBar({ activeView, onNavigate, role }) {
+export default function TopBar({ activeView, onNavigate, role, isDemoMode = false, demoRole, onDemoRoleChange }) {
   const { t, lang, toggleLang } = useI18n();
   const { theme, toggleTheme } = useTheme();
 
-  const navItems = [
-    { id: "dashboard", label: t("nav.dashboard") },
-    { id: "employees", label: t("nav.employees") },
-    { id: "report", label: t("nav.report") },
-    ...(role === "employee" ? [{ id: "operational", label: t("nav.operational") }] : []),
-    ...(role === "admin" || role === "manager" ? [{ id: "live", label: t("nav.live") }] : []),
-    ...(role === "admin" ? [{ id: "admin", label: t("nav.admin") }, { id: "settings", label: t("nav.settings") }] : []),
-    ...(role === "admin" || role === "auditor" ? [{ id: "auditLog", label: t("nav.auditLog") }] : [])
-  ];
+  const navItems = role === "employee"
+    ? [{ id: "operational", label: t("nav.operational") }]
+    : role === "manager"
+      ? [
+          { id: "dashboard", label: t("nav.dashboard") },
+          { id: "employees", label: t("nav.employees") },
+          { id: "report", label: t("nav.report") },
+          { id: "live", label: t("nav.live") }
+        ]
+      : role === "admin"
+        ? [
+            { id: "dashboard", label: t("nav.dashboard") },
+            { id: "employees", label: t("nav.employees") },
+            { id: "report", label: t("nav.report") },
+            { id: "live", label: t("nav.live") },
+            { id: "admin", label: t("nav.admin") },
+            { id: "settings", label: t("nav.settings") },
+            { id: "auditLog", label: t("nav.auditLog") }
+          ]
+        : role === "auditor"
+          ? [
+              { id: "dashboard", label: t("nav.dashboard") },
+              { id: "employees", label: t("nav.employees") },
+              { id: "report", label: t("nav.report") },
+              { id: "auditLog", label: t("nav.auditLog") }
+            ]
+          : [];
 
   return (
     <header className="topbar no-print">
@@ -27,7 +45,7 @@ export default function TopBar({ activeView, onNavigate, role }) {
         </div>
       </div>
 
-      <nav>
+      <nav aria-label="Primary navigation">
         {navItems.map((item) => (
           <button
             key={item.id}
@@ -40,6 +58,15 @@ export default function TopBar({ activeView, onNavigate, role }) {
       </nav>
 
       <div className="topbar-actions">
+        {isDemoMode && (
+          <label className="demo-role-switcher">
+            <span>{t("demo.viewAs")}</span>
+            <select value={demoRole} onChange={(event) => onDemoRoleChange(event.target.value)} aria-label={t("demo.viewAs")}>
+              <option value="employee">{t("role.employee")}</option>
+              <option value="admin">{t("role.admin")}</option>
+            </select>
+          </label>
+        )}
         <button className="icon-btn" onClick={toggleLang} title={t("lang.toggle")}>
           <Languages size={16} />
           <span className="lang-code">{lang.toUpperCase()}</span>

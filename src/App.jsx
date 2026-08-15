@@ -31,7 +31,7 @@ const DEMO_EMPLOYEES = [
   createEmployee({ id: "emp-sofia", employeeId: "EMP-003", fullName: "Sofia Klein", profession: "registeredNurse", department: "Surgery", contractedHours: 38.5 })
 ];
 
-const DEMO_STORAGE = { employees: "shiftguard-demo-employees", shifts: "shiftguard-demo-shifts" };
+const DEMO_STORAGE = { employees: "shiftguard-demo-employees", shifts: "shiftguard-demo-shifts", role: "shiftguard-demo-role" };
 
 function readDemo(key, fallback) {
   try {
@@ -52,7 +52,8 @@ const DEMO_SHIFTS = [
 export default function App() {
   const { t } = useI18n();
   const { user, profile, role, loading: authLoading, signOut } = useAuth();
-  const effectiveRole = role || (!isSupabaseConfigured ? "employee" : null);
+  const [demoRole, setDemoRole] = useState(() => isSupabaseConfigured ? null : readDemo(DEMO_STORAGE.role, "admin"));
+  const effectiveRole = isSupabaseConfigured ? role : demoRole;
   const effectiveOrganizationId = profile?.organization_id || "demo-organization";
   const effectiveUserId = user?.id || "demo-user";
   const [employees, setEmployees] = useState(() => isSupabaseConfigured ? [] : readDemo(DEMO_STORAGE.employees, DEMO_EMPLOYEES));
@@ -64,9 +65,16 @@ export default function App() {
   const [dataError, setDataError] = useState("");
   const [rules, setRules] = useState(RULES);
 
-  const canManage = !isSupabaseConfigured || role === "admin" || role === "manager";
-  const canManageEmployees = !isSupabaseConfigured || role === "admin" || role === "manager";
-  const readOnly = isSupabaseConfigured && !canManage;
+  const canManage = effectiveRole === "admin" || effectiveRole === "manager";
+  const canManageEmployees = canManage;
+  const readOnly = !canManage;
+  const allowedViews = useMemo(() => {
+    if (effectiveRole === "employee") return ["operational"];
+    if (effectiveRole === "admin") return ["dashboard", "employees", "report", "live", "admin", "settings", "auditLog"];
+    if (effectiveRole === "manager") return ["dashboard", "employees", "report", "live"];
+    if (effectiveRole === "auditor") return ["dashboard", "employees", "report", "auditLog"];
+    return [];
+  }, [effectiveRole]);
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -80,9 +88,14 @@ export default function App() {
   }, [employees, rawShifts]);
 
   useEffect(() => {
-    if (effectiveRole === "employee") setActiveView("operational");
-    if (effectiveRole === "manager" || effectiveRole === "admin") setActiveView("live");
-  }, [effectiveRole]);
+    if (!allowedViews.includes(activeView)) setActiveView(allowedViews[0] || "operational");
+  }, [activeView, allowedViews]);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) {
+      try { localStorage.setItem(DEMO_STORAGE.role, demoRole); } catch { /* Demo remains usable without storage. */ }
+    }
+  }, [demoRole]);
 
   useEffect(() => {
     if (!isSupabaseConfigured || !profile?.organization_id) return undefined;
@@ -109,8 +122,15 @@ export default function App() {
   if (isSupabaseConfigured && dataLoading) return <main className="auth-shell"><div className="auth-card"><p>{t("data.loading")}</p></div></main>;
 
   function navigate(view) {
+    if (!allowedViews.includes(view)) return;
     setActiveView(view);
     if (view === "report") setTimeout(() => document.getElementById("audit-report")?.scrollIntoView({ behavior: "smooth" }), 0);
+  }
+
+  function changeDemoRole(nextRole) {
+    if (isSupabaseConfigured || !["employee", "admin"].includes(nextRole)) return;
+    setDemoRole(nextRole);
+    setActiveView(nextRole === "employee" ? "operational" : "dashboard");
   }
 
   async function saveShift(form) {
@@ -189,17 +209,17 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <TopBar activeView={activeView} onNavigate={navigate} role={effectiveRole} />
+      <TopBar activeView={activeView} onNavigate={navigate} role={effectiveRole} isDemoMode={!isSupabaseConfigured} demoRole={demoRole} onDemoRoleChange={changeDemoRole} />
       <main>
         {dataError && <div className="global-error" role="alert">{dataError}</div>}
-        {activeView === "dashboard" && <DashboardPage employees={employees} auditedShifts={auditedShifts} summary={summary} showForm={showForm && canManage} editingShift={editingShift} onSaveShift={saveShift} onDeleteShift={deleteShift} onEditShift={editShift} onCancelEdit={() => setEditingShift(null)} onOpenAddShift={() => { setEditingShift(null); setShowForm(true); }} onLoadDemo={loadDemo} onClearAll={clearAll} readOnly={readOnly} />}
-        {activeView === "employees" && <EmployeesPage employees={employees} auditedShifts={auditedShifts} onSaveEmployee={saveEmployee} onDeleteEmployee={deleteEmployee} readOnly={readOnly} />}
+        {activeView === "dashboard" && allowedViews.includes("dashboard") && <DashboardPage employees={employees} auditedShifts={auditedShifts} summary={summary} showForm={showForm && canManage} editingShift={editingShift} onSaveShift={saveShift} onDeleteShift={deleteShift} onEditShift={editShift} onCancelEdit={() => setEditingShift(null)} onOpenAddShift={() => { setEditingShift(null); setShowForm(true); }} onLoadDemo={loadDemo} onClearAll={clearAll} readOnly={readOnly} />}
+        {activeView === "employees" && allowedViews.includes("employees") && <EmployeesPage employees={employees} auditedShifts={auditedShifts} onSaveEmployee={saveEmployee} onDeleteEmployee={deleteEmployee} readOnly={readOnly} />}
         {activeView === "admin" && effectiveRole === "admin" && <AdminUsersPage organizationId={effectiveOrganizationId} currentUserId={effectiveUserId} />}
         {activeView === "settings" && effectiveRole === "admin" && <ComplianceSettingsPage organizationId={effectiveOrganizationId} userId={effectiveUserId} onRulesSaved={setRules} />}
         {activeView === "auditLog" && (effectiveRole === "admin" || effectiveRole === "auditor") && <AuditLogPage organizationId={effectiveOrganizationId} />}
         {activeView === "operational" && effectiveRole === "employee" && <EmployeeOperationalPage organizationId={effectiveOrganizationId} userId={effectiveUserId} />}
         {activeView === "live" && (effectiveRole === "admin" || effectiveRole === "manager") && <LiveDashboardPage organizationId={effectiveOrganizationId} />}
-        {(activeView === "dashboard" || activeView === "employees" || activeView === "report") && <AuditReport shifts={auditedShifts} />}
+        {activeView === "report" && allowedViews.includes("report") && <AuditReport shifts={auditedShifts} />}
       </main>
       <footer className="app-footer no-print">
         <span>{t("app.name")} · {t("hero.badgeSub")}</span>

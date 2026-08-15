@@ -6,6 +6,7 @@ export const translations = {
     "nav.employees": "Employees",
     "nav.report": "Audit Report",
     "topbar.internalMode": "Internal mode",
+    "demo.viewAs": "View as",
 
     "auth.eyebrow": "Secure workspace access",
     "auth.subtitle": "Sign in to your organization’s ShiftGuard workspace.",
@@ -251,6 +252,7 @@ export const translations = {
     "nav.employees": "Mitarbeiter",
     "nav.report": "Prüfbericht",
     "topbar.internalMode": "Interner Modus",
+    "demo.viewAs": "Anzeigen als",
 
     "auth.eyebrow": "Sicherer Arbeitsbereich",
     "auth.subtitle": "Melden Sie sich im ShiftGuard-Arbeitsbereich Ihrer Organisation an.",
