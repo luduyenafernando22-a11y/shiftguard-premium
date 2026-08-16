@@ -38,7 +38,7 @@ export default function TopBar({ activeView, onNavigate, role, isDemoMode = fals
   return (
     <header className="topbar no-print">
       <div className="brand">
-        <div className="brand-mark"><img src="/pwa-192x192-reference.png" alt="ShiftGuard" /></div>
+        <div className="brand-mark"><img src="/1786636863665.png" alt="ShiftGuard" /></div>
         <div>
           <strong>{t("app.name")}</strong>
           <span>{t("app.tagline")}</span>
